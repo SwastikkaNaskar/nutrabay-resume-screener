@@ -1,0 +1,302 @@
+{
+  "name": "AI automation system for Nutrabay Resume Screener",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e375173c-ccd7-45b4-bb49-8fc1e3103f72",
+      "name": "Start"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1RptLqIL8Xe3xfi-bZaTIvAQfbMo0U3hjZ9qmJgqeiDk",
+          "mode": "list",
+          "cachedResultName": "Nutrabay Resume Screener",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RptLqIL8Xe3xfi-bZaTIvAQfbMo0U3hjZ9qmJgqeiDk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "JD",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RptLqIL8Xe3xfi-bZaTIvAQfbMo0U3hjZ9qmJgqeiDk/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "2f1c8d9d-9603-45d5-9846-b37df13f1e32",
+      "name": "Read Job Description",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "sagjTiTXPncJlgCE",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1RptLqIL8Xe3xfi-bZaTIvAQfbMo0U3hjZ9qmJgqeiDk",
+          "mode": "list",
+          "cachedResultName": "Nutrabay Resume Screener",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RptLqIL8Xe3xfi-bZaTIvAQfbMo0U3hjZ9qmJgqeiDk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1576229742,
+          "mode": "list",
+          "cachedResultName": "Resumes",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RptLqIL8Xe3xfi-bZaTIvAQfbMo0U3hjZ9qmJgqeiDk/edit#gid=1576229742"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        416,
+        0
+      ],
+      "id": "01ac8d01-2216-4e2b-aa9a-91b1cf9d6afe",
+      "name": "Read resumes",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "sagjTiTXPncJlgCE",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        624,
+        0
+      ],
+      "id": "5b29c849-e885-450a-b06b-05fb68659927",
+      "name": "Loop each candidate"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_GROQ_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"You are a resume screener. JD: {{ $('Read Job Description').item.json['Data Analyst Intern'] }} Resume: {{ $json['Resume Text'] }} Candidate: {{ $json['Candidate Name'] }}. Return ONLY a JSON object with: score (0-100), strengths (2-3 items array), gaps (2-3 items array), recommendation (Strong Fit / Moderate Fit / Not Fit), summary (one line).\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        832,
+        208
+      ],
+      "id": "98a2d4e4-7af3-459d-bc52-deb41d05a436",
+      "name": "Grok AI screening"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1RptLqIL8Xe3xfi-bZaTIvAQfbMo0U3hjZ9qmJgqeiDk",
+          "mode": "list",
+          "cachedResultName": "Nutrabay Resume Screener",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RptLqIL8Xe3xfi-bZaTIvAQfbMo0U3hjZ9qmJgqeiDk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 632036102,
+          "mode": "list",
+          "cachedResultName": "Output",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RptLqIL8Xe3xfi-bZaTIvAQfbMo0U3hjZ9qmJgqeiDk/edit#gid=632036102"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Candidate": "={{ $('Loop each candidate').item.json['Candidate Name'] }}",
+            "Score": "={{ JSON.parse($('Grok AI screening').item.json.choices[0].message.content.replace(/```json|```/g, '').trim()).score }}",
+            "Strengths": "={{ JSON.parse($('Grok AI screening').item.json.choices[0].message.content.replace(/```json|```/g, '').trim()).strengths.join(', ') }}",
+            "Recommendation": "={{ JSON.parse($('Grok AI screening').item.json.choices[0].message.content.replace(/```json|```/g, '').trim()).recommendation }}",
+            "Gaps": "={{ JSON.parse($('Grok AI screening').item.json.choices[0].message.content.replace(/^```[\\w]*\\n?/, '').replace(/```$/, '').trim()).gaps.join(', ') }}",
+            "Summary": "={{ JSON.parse($('Grok AI screening').item.json.choices[0].message.content.replace(/^```[\\w]*\\n?/, '').replace(/```$/, '').trim()).summary }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Candidate",
+              "displayName": "Candidate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Score",
+              "displayName": "Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Strengths",
+              "displayName": "Strengths",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Gaps",
+              "displayName": "Gaps",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recommendation",
+              "displayName": "Recommendation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1008,
+        16
+      ],
+      "id": "8d041465-d6ef-4bf6-8951-e939f8cb9e53",
+      "name": "Write results to sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "sagjTiTXPncJlgCE",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Read Job Description",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Job Description": {
+      "main": [
+        [
+          {
+            "node": "Read resumes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read resumes": {
+      "main": [
+        [
+          {
+            "node": "Loop each candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop each candidate": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Grok AI screening",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grok AI screening": {
+      "main": [
+        [
+          {
+            "node": "Loop each candidate",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Write results to sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4797bd28-10fb-42ed-9551-5ad46d900e20",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1ace488623adc70131441e0ee38e1e5381b5a70d2459737e2794c0bdb3189b9d"
+  },
+  "id": "c4TROucBToePgdHX",
+  "tags": []
+}
