@@ -1,4 +1,4 @@
-# AI Resume Screening System — Nutrabay Assessment
+# AI Resume Screening System 
 
 An end-to-end automated resume screening system built with n8n, Groq AI, and Google Sheets. Evaluates multiple candidates against a Job Description and generates structured hiring recommendations — fully automated, zero manual effort.
 
